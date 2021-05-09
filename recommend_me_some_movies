@@ -1,0 +1,39 @@
+#!/usr/bin/env php
+<?php
+
+use App\Service\ImdbService;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\SingleCommandApplication;
+use Symfony\Component\Console\Style\SymfonyStyle;
+
+require __DIR__.'/vendor/autoload.php';
+
+(new SingleCommandApplication())
+    ->setName('Recommend me some movies!')
+    ->setHelp('This script scrapes 10 movies from IMDb TOP 1000 list.')
+    ->addOption('genre', 'g', InputOption::VALUE_REQUIRED, 'Movies genre.')
+    ->setCode(function (InputInterface $input, OutputInterface $output) {
+        $io = new SymfonyStyle($input, $output);
+
+        $genre = $input->getOption('genre');
+
+        if (! ImdbService::isValidGenre($genre)) {
+            $io->writeln('<error>Wrong genre value!</error>');
+            $io->writeln('<error>Valid values are: '. implode(', ', ImdbService::GENRES) .'.</error>');
+
+            return Command::FAILURE;
+        }
+
+        $movies = ImdbService::recommendMovies($genre);
+
+        $io->table(
+            ['Title', 'Year', 'Genre', 'Rating', 'Votes'],
+            $movies,
+        );
+
+        return Command::SUCCESS;
+    })
+    ->run();
